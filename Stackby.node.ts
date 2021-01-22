@@ -106,9 +106,9 @@ export class Stackby implements INodeType {
 			//         list
 			// ----------------------------------
 			{
-				displayName: 'Limit',
-				name: 'limit',
-				type: 'number',
+				displayName: 'Return All',
+				name: 'returnAll',
+				type: 'boolean',
 				displayOptions: {
 					show: {
 						operation: [
@@ -116,11 +116,46 @@ export class Stackby implements INodeType {
 						],
 					},
 				},
+				default: true,
+				description: 'If all results should be returned or only up to a given limit.',
+			},
+			{
+				displayName: 'Limit',
+				name: 'limit',
+				type: 'number',
+				displayOptions: {
+					show: {
+						'operation': [
+							'list',
+						],
+						'returnAll':[
+							false,
+						]
+					},
+				},
 				typeOptions: {
 					minValue: 1,
-					maxValue: 100,
+					maxValue: 1000,
 				},
-				default: 100,
+				default: 1000,
+				description: 'Number of results to return.',
+			},
+			{
+				displayName: 'Offset',
+				name: 'offset',
+				type: 'number',
+				displayOptions: {
+					show: {
+						'operation': [
+							'list',
+						],
+					},
+				},
+				typeOptions: {
+					minValue: 0,
+					maxValue: 1000,
+				},
+				default: 0,
 				description: 'Number of results to return.',
 			},
 			{
@@ -138,26 +173,26 @@ export class Stackby implements INodeType {
 				description: 'Additional options which decide which records should be returned',
 				placeholder: 'Add Option',
 				options: [
-					{
-						displayName: 'Fields',
-						name: 'fields',
-						type: 'string',
-						typeOptions: {
-							multipleValues: true,
-							multipleValueButtonText: 'Add Field',
-						},
-						default: [],
-						placeholder: 'Name',
-						description: 'Only data for fields whose names are in this list will be included in the records.',
-					},
-					{
-						displayName: 'Filter By Formula',
-						name: 'filterByFormula',
-						type: 'string',
-						default: '',
-						placeholder: 'NOT({Name} = \'\')',
-						description: 'A formula used to filter records. The formula will be evaluated for each<br />record, and if the result is not 0, false, "", NaN, [], or #Error!<br />the record will be included in the response.',
-					},
+					// {
+					// 	displayName: 'Fields',
+					// 	name: 'fields',
+					// 	type: 'string',
+					// 	typeOptions: {
+					// 		multipleValues: true,
+					// 		multipleValueButtonText: 'Add Field',
+					// 	},
+					// 	default: [],
+					// 	placeholder: 'Name',
+					// 	description: 'Only data for fields whose names are in this list will be included in the records.',
+					// },
+					// {
+					// 	displayName: 'Filter By Formula',
+					// 	name: 'filterByFormula',
+					// 	type: 'string',
+					// 	default: '',
+					// 	placeholder: 'NOT({Name} = \'\')',
+					// 	description: 'A formula used to filter records. The formula will be evaluated for each<br />record, and if the result is not 0, false, "", NaN, [], or #Error!<br />the record will be included in the response.',
+					// },
 					{
 						displayName: 'Sort',
 						name: 'sort',
@@ -297,7 +332,7 @@ export class Stackby implements INodeType {
 			requestMethod = "POST";
 			let recordData=this.getNodeParameter('recordData', 0) as string;
 			endpoint = `rowcreate/${stackId}/${table}`;
-			body = recordData;;
+			body = recordData;
 			console.log('1',body);
 			body = JSON.parse(body);
 			console.log('2',body);
@@ -308,7 +343,12 @@ export class Stackby implements INodeType {
 		else if(operation === 'list')
 		{
 			requestMethod = "GET";
-			let limit=this.getNodeParameter('limit', 0) as number;
+			let returnAll=this.getNodeParameter('returnAll', 0) as boolean;
+			let limit=1000;
+			if(returnAll===false){
+				limit=this.getNodeParameter('limit', 0) as number;
+			}
+			qs.offset=this.getNodeParameter('offset', 0) as number;
 			const additionalOptions = this.getNodeParameter('additionalOptions', 0, {}) as IDataObject;
 
 			for (const key of Object.keys(additionalOptions)) {
@@ -323,8 +363,8 @@ export class Stackby implements INodeType {
 			//qs.View = qs.view ? qs.view : null;
 
 			endpoint = `rowlist/${stackId}/${table}`;
-			responseData = await apiRequest.call(this, requestMethod, endpoint, body, qs);
-
+			let rowBody  = {}; 
+			responseData = await apiRequest.call(this, requestMethod, endpoint, rowBody, qs);
 			returnData.push(responseData);
 		}
 

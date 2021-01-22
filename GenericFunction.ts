@@ -64,7 +64,6 @@ export async function apiRequest(this: IHookFunctions | IExecuteFunctions | ILoa
 		json: true,
 	};
 
-
 	if (Object.keys(option).length !== 0) {
 		Object.assign(options, option);
 	}
